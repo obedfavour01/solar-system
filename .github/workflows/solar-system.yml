@@ -21,7 +21,7 @@ jobs:
             version: [18, 19, 20]
             exclude:
               - version: 18
-              - os: macos-latest
+                os: macos-latest
 
         runs-on: ${{ matrix.os }}
         steps:
