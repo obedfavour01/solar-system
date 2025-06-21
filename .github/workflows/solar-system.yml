@@ -73,9 +73,12 @@ jobs:
           with:
             path: node_modules
             key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-            
+
         - name: Install Dependencies
           run: npm install
+
+        - name: Print new context
+          run : echo ${{ github.actor_id }}
     
         - name: Check code coverage
           continue-on-error: true
