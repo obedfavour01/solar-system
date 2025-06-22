@@ -16,6 +16,18 @@ env:
 jobs:
     unit-testing:
         name: Unit Testing
+        # services:
+        #   mongo-db:
+        #     image: siddharth67/mongo-db:non-prod
+        #     ports:
+        #       - 27017:27017
+
+        # env:
+        #   MONGO_URI: 'mongodb://localhost:27017/superData'
+        #   MONGO_USERNAME: non-prod-user
+        #   MONGO_PASSWORD: non-prod-password
+   
+
         strategy:
           matrix:
             os: [ ubuntu-latest]
@@ -59,6 +71,22 @@ jobs:
     
     code-coverage:
         name: Code Coverage
+        container: 
+          image: node:18
+
+        # services:
+        #   mongo-db:
+        #     image: siddharth67/mongo-db:non-prod
+        #     options: 
+        #       --name mongo
+        #     # no need for port mapping if service container is working with a job container
+
+        # env:
+        #   MONGO_URI: 'mongodb://mongo:27017/superData'
+        #   MONGO_USERNAME: non-prod-user
+        #   MONGO_PASSWORD: non-prod-password
+
+
         runs-on: ubuntu-latest
         steps:
         - name: Checkout Repository
@@ -134,12 +162,7 @@ jobs:
             echo Testing Image Url using wget
             wget -q -O - http://127.0.0.1:3000/live | grep live
 
-      - name: Push to DockerHub
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          push: true
-          tags: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+      
 
       
       - name: Log in to the Container registry
@@ -154,4 +177,34 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/solar-system:${{ github.sha }}
+            ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+    
+    dev-deploy:
+      needs: docker
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout Repository
+          uses: actions/checkout@v4
+
+        - name: Install Kubectl CLI
+          uses: azure/setup-kubectl@v3
+          with:
+            version: 'v1.26.0'
+
+        - name: Set KubeConfig
+          uses: azure/k8s-set-context@v4
+          with:
+            method: kubeconfig
+            kubeconfig: ${{ secrets.KUBECONFIG }}
+            
+        
+        - name: Fetch Kubernetes Cluster Details
+          run: |
+            kubectl version --short
+            echo -----------------------------------------
+            kubectl get nodes
+
+
+
